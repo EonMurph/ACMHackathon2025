@@ -1,6 +1,6 @@
 from user_agents import parse
 from re import search
-from ACMHackathon2025.prep_data import get_data_dict
+from prep_data import get_data_dict
 
 def process_data():
     data = []
