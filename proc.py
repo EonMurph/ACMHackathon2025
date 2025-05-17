@@ -1,6 +1,4 @@
 from user_agents import parse
-from re import search
-from ACMHackathon2025.prep_data import get_data_dict
 
 def process_data():
     data = []
@@ -10,20 +8,23 @@ def process_data():
     device_type = {}
     status_codes = []
     request_freq = {}
+    
+    # split the logs line wise into lists
     with open("logs.log", "r") as file:
         for line in file:
             data.append(line.strip("\n").split(" - "))
 
     for d in data:
+        # split variables
         ip = d[0]
         status = int(d[3])
         size = int(d[4])
         endpoint = d[2].split(" ")[1] if d[2] != '""' else None
         device = parse(d[5]).device.family
 
-
         status_codes.append(status)
         
+        # device pie chart data
         if device not in device_type:
             device_type[device] = 1
         else:
@@ -57,11 +58,13 @@ def process_data():
             
     # Group status codes into categories (200s, 300s, 400s, 500s)
     categories = [f"{status // 100}00s" for status in status_codes]
+    # get unique categories
     c = set(categories)
+    # get count dictionary where the value is the status code i.e. 200's, 500's and the value is the count
     category_counts = {k:categories.count(k) for k in c}
-
-
     req_amounts = dict(sorted(req_amounts.items(), key=lambda x: x[1], reverse=True))
+
+    # returning all the data, append to the end of the list, or can change the order, but make sure to unpack correctly in the app
     return req_amounts, endpoint_success, traffic, device_type, category_counts
 
 if __name__=="__main__":

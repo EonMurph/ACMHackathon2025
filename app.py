@@ -7,8 +7,12 @@ import requests
 from proc import process_data
 from functools import cache
 
+
 @cache
 def geolocate_ip(ip):
+    '''
+    Given an ip return a tuple of coordinates 
+    '''
     try:
         res = requests.get(f"http://ip-api.com/json/{ip}?fields=status,message,lat,lon", timeout=2).json()
         if res["status"] == "success":
@@ -18,10 +22,13 @@ def geolocate_ip(ip):
     return None, None
 
 app = dash.Dash(__name__)
+
+# dictionaries from processing the data
 ip_data, endpoint_data, traffic, device_data, status_data = process_data()
 
 app.layout = html.Div([
     html.Div([
+        # sidebar
         html.H2("Dashboard", className="sidebar-title"),
         html.Ul([
             html.Li(html.A("Traffic & Usage Patterns", href="#traffic")),
@@ -103,6 +110,7 @@ app.layout = html.Div([
 ])], className="main-content")
 
 @app.callback(
+    # have to be in this order
     Output('ip-pie-chart', 'figure'),
     Output('endpoint-bar-chart', 'figure'),
     Output('ip-map-chart', 'figure'),
@@ -116,12 +124,10 @@ app.layout = html.Div([
 )
 def update_charts(max_ips, max_endpoints, top_n_ips, max_devices):
 
-    # --- PIE CHART ---
+    # cumulative bytes per ip address response pie chart
     df_ip = pd.DataFrame(list(ip_data.items()), columns=["IP Address", "Cumulative Size (Bytes)"])
     df_ip = df_ip.sort_values("Cumulative Size (Bytes)", ascending=False).head(max_ips)
-
-
-    pie_fig = px.pie(
+    ip_pie_fig = px.pie(
         df_ip,
         names="IP Address",
         values="Cumulative Size (Bytes)",
@@ -129,10 +135,11 @@ def update_charts(max_ips, max_endpoints, top_n_ips, max_devices):
         hole=0.3,
         color_discrete_sequence=px.colors.qualitative.Safe
     )
-    pie_fig.update_traces(textposition="inside", textinfo='label+percent')
+    ip_pie_fig.update_traces(textposition="inside", textinfo='label+percent')
     
+    # status code pie chart
     df_status = pd.DataFrame(list(status_data.items()), columns=["Status Code", "Count"])
-    status_pie = px.pie(
+    status_pie_fig = px.pie(
         df_status,
         names="Status Code",
         values="Count",
@@ -140,9 +147,9 @@ def update_charts(max_ips, max_endpoints, top_n_ips, max_devices):
         hole=0.3,
         color_discrete_sequence=px.colors.qualitative.Safe
     )
-    status_pie.update_traces(textposition="inside", textinfo='label+percent')
+    status_pie_fig.update_traces(textposition="inside", textinfo='label+percent')
 
-    # --- BAR CHART ---
+    # endpoints sucesses v failures
     sorted_endpoints = sorted(endpoint_data.items(), key=lambda x: x[1][0] + x[1][1], reverse=True)
     top_endpoints = sorted_endpoints[:max_endpoints]
 
@@ -150,11 +157,11 @@ def update_charts(max_ips, max_endpoints, top_n_ips, max_devices):
     success_counts = [ep_data[0] for _, ep_data in top_endpoints]
     failure_counts = [ep_data[1] for _, ep_data in top_endpoints]
 
-    bar_fig = go.Figure(data=[
+    endpoint_bar_fig = go.Figure(data=[
         go.Bar(name='Successes', x=endpoints, y=success_counts, marker_color='green', offsetgroup=0),
         go.Bar(name='Failures', x=endpoints, y=failure_counts, marker_color='red', offsetgroup=1),
     ])
-    bar_fig.update_layout(
+    endpoint_bar_fig.update_layout(
         barmode='group',
         title="Endpoints (Success v Fail)",
         yaxis_title="Number of Requests",
@@ -162,7 +169,7 @@ def update_charts(max_ips, max_endpoints, top_n_ips, max_devices):
         bargap=0.3
     )
 
-    # --- MAP CHART ---
+    # map of web traffic to specific ip
     sorted_traffic = sorted(traffic.items(), key=lambda x: x[1], reverse=True)
     top_traffic = sorted_traffic[:top_n_ips]
 
@@ -199,12 +206,13 @@ def update_charts(max_ips, max_endpoints, top_n_ips, max_devices):
             title=f"Top {top_n_ips} IP Locations by Traffic",
             margin={"r":0, "t":30, "l":0, "b":0}
         )
-    # Sort and limit to top devices
+
+    # device distribution pie chart
     sorted_devices = sorted(device_data.items(), key=lambda x: x[1], reverse=True)
     top_devices = sorted_devices[:max_devices]
 
     df_device = pd.DataFrame(top_devices, columns=["Device", "Count"])
-    device_fig = px.pie(
+    device_pie_fig = px.pie(
         df_device,
         names="Device",
         values="Count",
@@ -212,17 +220,20 @@ def update_charts(max_ips, max_endpoints, top_n_ips, max_devices):
         hole=0.3,
         color_discrete_sequence=px.colors.qualitative.Safe
     )
-    device_fig.update_traces(textposition="inside", textinfo='label+percent') 
+    device_pie_fig.update_traces(textposition="inside", textinfo='label+percent') 
     
     # styling the figures
-    figs = [pie_fig, bar_fig, map_fig, device_fig, status_pie]
+    figs = [ip_pie_fig, endpoint_bar_fig, map_fig, device_pie_fig, status_pie_fig]
     for fig in figs:
         fig.update_layout(paper_bgcolor='#2c3155',
                           font=dict(color="#fff"),
                           legend=dict(orientation="h"))
-    bar_fig.update_layout(legend=dict(orientation="v"))
 
-    return pie_fig, bar_fig, map_fig, device_fig, status_pie
+    # overwrite so legend is vertically adjacent (avoids overlapping)
+    endpoint_bar_fig.update_layout(legend=dict(orientation="v"))
+
+    # returning all the figures, append to end of the list 
+    return ip_pie_fig, endpoint_bar_fig, map_fig, device_pie_fig, status_pie_fig
 
 if __name__ == '__main__':
     app.run(debug=True)
