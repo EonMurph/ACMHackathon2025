@@ -1,0 +1,95 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  color: white;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #0d102b;
+}
+
+.sidebar {
+  position: fixed; /* Makes the sidebar stick to the screen */
+  top: 0;
+  left: 0;
+  width: 20%; /* Sidebar width */
+  height: 100vh; /* Full height of the screen */
+  background-color: #6867ab;
+  color: white;
+  padding-top: 20px;
+  overflow-y: auto; /* Prevent overflow */
+  z-index: 100; /* Ensure it is above other content */
+}
+
+.sidebar h2{
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.sidebar h2 {
+  color: white;
+}
+
+.sidebar .nav-links {
+  list-style: none;
+}
+
+.sidebar .nav-links li {
+  padding: 15px;
+  border-radius: 10px;
+  background-color: rgb(121, 125, 179);
+  margin: 5px;
+}
+
+.sidebar .nav-links li a {
+  color: white;
+  text-decoration: none;
+  display: block;
+  font-size: 18px;
+  transition: background-color 0.3s ease;
+}
+
+.sidebar .nav-links li:hover {
+  background-color: #b6b4e3;
+}
+
+/* Main Content - Adjusted for Sidebar */
+.main-content {
+  margin-left: 20%; /* Offset the content to the right to make space for the sidebar */
+  width: 80%;
+  flex-grow: 1;
+  padding: 20px;
+  background-color: #0d102b;
+  overflow-y: auto; /* Allow scrolling of the main content */
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.header h2 {
+  color: #ffffff;
+}
+
+/* Sections and Cards */
+.allData {
+  display: flex;
+  padding: 20px;
+}
+
+.data {
+  margin: 10px;
+  background-color: #2c3155;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  flex-grow: 1;
+  text-align: center;
+}
