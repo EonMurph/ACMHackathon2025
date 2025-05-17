@@ -6,7 +6,7 @@ with open('access.log', 'r') as in_file:
         data = {}
         for line in in_file.readlines():
             ip = search(r'\d+\.\d+\.\d+\.\d+', line).group(0)
-            date = search(r'\[(.+)\]', line).group(1)
+            date = search(r'\[(.+\d)\]', line).group(1)
             request = search(r'"\w+\s\/.*HTTP\/\d\.\d"|""', line).group(0)
             return_code = search(r'\s(\d{3})\s\d+', line).group(1)
             response_size = search(r'\s\d{3}\s(\d+)\s', line).group(1)
