@@ -1,7 +1,9 @@
 from re import search
+from json import dump
 
-with open("access.log", "r") as in_file:
-    with open("prepared_access_logs", "w") as out_file:
+with open('access.log', 'r') as in_file:
+    with open('prepared_access_logs.json', 'w') as out_file:
+        data = {}
         for line in in_file.readlines():
             ip = search(r'\d+\.\d+\.\d+\.\d+', line).group(0)
             date = search(r'\[(.+)\]', line).group(1)
@@ -9,5 +11,23 @@ with open("access.log", "r") as in_file:
             return_code = search(r'\s(\d{3})\s\d+', line).group(1)
             response_size = search(r'\s\d{3}\s(\d+)\s', line).group(1)
             user_agent = search(r'"[^"]*"$', line).group(0)
-            new_line = " - ".join([ip, date, request, return_code, response_size, user_agent])
-            out_file.write(new_line + "\n")
+            if ip in data:
+                data[ip].append(
+                    {
+                        'date': date,
+                        'request': request,
+                        'response_size': response_size,
+                        'user_agent': user_agent,
+                    }
+                )
+            else:
+                data[ip] = [
+                    {
+                        'date': date,
+                        'request': request,
+                        'response_size': response_size,
+                        'user_agent': user_agent,
+                    }
+                ]
+
+        dump(data, out_file, ensure_ascii=False)
