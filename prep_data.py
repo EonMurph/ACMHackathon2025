@@ -16,6 +16,7 @@ with open('access.log', 'r') as in_file:
                     {
                         'date': date,
                         'request': request,
+                        'return_code': return_code,
                         'response_size': response_size,
                         'user_agent': user_agent,
                     }
@@ -25,6 +26,7 @@ with open('access.log', 'r') as in_file:
                     {
                         'date': date,
                         'request': request,
+                        'return_code': return_code,
                         'response_size': response_size,
                         'user_agent': user_agent,
                     }
