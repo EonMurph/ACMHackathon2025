@@ -1,4 +1,3 @@
-import re
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -8,11 +7,8 @@ with open("prepared_access_logs", "r") as file:
 
 # Graph: Pie chart of 200s, 400s, 500s
 def statusRequests():
-    # Regex pattern to extract status codes
-    log_pattern = re.compile(r'\S+ - \d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2} [+\-]\d{4} - ".*" - (?P<status>\d{3})')
-
     # Extract status codes from lines
-    status_codes = [int(match.group("status")) for line in lines if (match := log_pattern.search(line))]
+    status_codes = [int(line.split(' - ')[3]) for line in lines]
 
     # Group status codes into categories (200s, 300s, 400s, 500s)
     categories = [f"{status // 100}00s" for status in status_codes]
