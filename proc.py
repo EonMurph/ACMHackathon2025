@@ -6,7 +6,6 @@ def process_data(logs, start_date, end_date, ip_picked='all'):
     traffic = {} # dict[ip, num_requests]
     device_type = {} # dict[device_type, num_requests]
     status_codes = []
-    request_freq = {}
     
     # # split the logs line wise into lists
     # with open("logs.log", "r") as file:
@@ -31,10 +30,6 @@ def process_data(logs, start_date, end_date, ip_picked='all'):
                 else:
                     device_type[device] += 1
                 
-            # req freq
-            if ip not in request_freq:
-                request_freq[ip] = None
-            
 
             # traffic
             if ip not in traffic:
@@ -67,7 +62,7 @@ def process_data(logs, start_date, end_date, ip_picked='all'):
     req_amounts = dict(sorted(req_amounts.items(), key=lambda x: x[1], reverse=True))
 
     # returning all the data, append to the end of the list, or can change the order, but make sure to unpack correctly in the app
-    return req_amounts, endpoint_success, traffic, device_type, category_counts
+    return req_amounts, endpoint_success, traffic, device_type, category_counts, logs
 
 # if __name__=="__main__":
     # process_data(date)

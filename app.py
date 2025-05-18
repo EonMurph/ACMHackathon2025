@@ -1,4 +1,5 @@
 import dash
+from collections import Counter
 from dash import html, dcc, Input, Output
 import pandas as pd
 import plotly.express as px
@@ -7,7 +8,7 @@ import requests
 from proc import process_data
 from functools import cache
 from datetime import date, datetime
-from traffic_analysis import get_requests_from_date, convert_to_datetime
+from traffic_analysis import get_requests_from_date
 
 
 @cache
@@ -25,6 +26,34 @@ def geolocate_ip(ip):
         pass
     return None, None
 
+def get_request_timeseries(request_json, ip_picked="all"):
+    all_requests = []
+    for ip, requests in request_json.items():
+        if ip == ip_picked or ip_picked=="all":
+            for req in requests:
+                if isinstance(req, dict) and 'date' in req and isinstance(req['date'], str):
+                    try:
+                        dt = datetime.strptime(req['date'], "%d/%b/%Y:%H:%M:%S")
+                        all_requests.append(dt)
+                    except ValueError:
+                        pass
+
+    if not all_requests:
+        return pd.DataFrame(columns=['Time', 'Request Count'])
+
+    df = pd.DataFrame({'Time': all_requests})
+    df.set_index('Time', inplace=True)
+    timeseries = df.resample('h').size().rename("Request Count").reset_index()
+    return timeseries
+
+def plot_request_timeseries(timeseries_df):
+    return px.line(
+        timeseries_df,
+        x='Time',
+        y='Request Count',
+        title='Request Volume Over Time',
+        markers=True
+    )
 
 app = dash.Dash(__name__)
 
@@ -47,11 +76,6 @@ app.layout = html.Div(
                                 ),
                                 html.Li(
                                     html.A('Geographic or User-Agent Data', href='#geo')
-                                ),
-                                html.Li(
-                                    html.A(
-                                        'Security Related Insights', href='#security'
-                                    )
                                 ),
                             ],
                             className='nav-links',
@@ -111,25 +135,6 @@ app.layout = html.Div(
                         ),
                         html.Div(
                             [
-                                html.Label('Maximum number of endpoints to show:'),
-                                dcc.Slider(
-                                    id='max-endpoints-slider',
-                                    min=1,
-                                    max=10,
-                                    step=1,
-                                    value=5,
-                                    marks={i: str(i) for i in range(1, 21)},
-                                    tooltip={
-                                        'placement': 'bottom',
-                                        'always_visible': True,
-                                    },
-                                ),
-                                dcc.Graph(id='endpoint-bar-chart', className='graph'),
-                            ],
-                            className='data',
-                        ),
-                        html.Div(
-                            [
                                 html.Label('Maximum number of devices to show:'),
                                 dcc.Slider(
                                     id='max-devices-slider',
@@ -153,10 +158,35 @@ app.layout = html.Div(
                     className='allData',
                     id='traffic',
                 ),
+                html.Div([
+                    html.Div([
+                    html.H2("Request Volume Over Time", style={'textAlign': 'center'}),
+                    dcc.Graph(id='request-time-chart', className="graph")], className="data")
+                ], className="allData", id="request-timeseries"),
+
                 html.Div(
                     [
                         html.Div(
                             [dcc.Graph(id='status-pie-chart', className='graph')],
+                            className='data',
+                        ),
+                        html.Div(
+                            [
+                                html.Label('Maximum number of endpoints to show:'),
+                                dcc.Slider(
+                                    id='max-endpoints-slider',
+                                    min=1,
+                                    max=10,
+                                    step=1,
+                                    value=5,
+                                    marks={i: str(i) for i in range(1, 21)},
+                                    tooltip={
+                                        'placement': 'bottom',
+                                        'always_visible': True,
+                                    },
+                                ),
+                                dcc.Graph(id='endpoint-bar-chart', className='graph'),
+                            ],
                             className='data',
                         ),
                     ],
@@ -202,7 +232,9 @@ app.layout = html.Div(
     Output('ip-map-chart', 'figure'),
     Output('device-pie-chart', 'figure'),
     Output('status-pie-chart', 'figure'),
+    Output('request-time-chart', 'figure'),
     Output('ip-picker', 'options'),
+
     Input('max-ips-slider', 'value'),
     Input('max-endpoints-slider', 'value'),
     Input('top-n-ip-slider', 'value'),
@@ -219,7 +251,7 @@ def update_charts(
     # dictionaries from processing the data
     start_date = datetime.fromisoformat(start_date)
     end_date = datetime.fromisoformat(end_date)
-    ip_data, endpoint_data, traffic, device_data, status_data = process_data(
+    ip_data, endpoint_data, traffic, device_data, status_data, request_json = process_data(
         get_requests_from_date(start_date, end_date), start_date, end_date, ip_picked
     )
 
@@ -231,7 +263,7 @@ def update_charts(
         df_ip,
         names='IP Address',
         values='Cumulative Size (Bytes)',
-        title=f'Top {max_ips} IP Traffic Distribution',
+        title=f'Top {max_ips} IPs (Cumulative Response Size in Bytes)',
         hole=0.3,
         color_discrete_sequence=px.colors.qualitative.Safe,
     )
@@ -338,9 +370,13 @@ def update_charts(
         color_discrete_sequence=px.colors.qualitative.Safe,
     )
     device_pie_fig.update_traces(textposition='inside', textinfo='label+percent')
+    
+    # request timeseries graph
+    timeseries_df = get_request_timeseries(request_json,ip_picked)
+    time_fig = plot_request_timeseries(timeseries_df)
 
     # styling the figures
-    figs = [ip_pie_fig, endpoint_bar_fig, map_fig, device_pie_fig, status_pie_fig]
+    figs = [ip_pie_fig, endpoint_bar_fig, map_fig, device_pie_fig, status_pie_fig, time_fig]
     for fig in figs:
         fig.update_layout(
             paper_bgcolor='#2c3155',
@@ -361,6 +397,7 @@ def update_charts(
         map_fig,
         device_pie_fig,
         status_pie_fig,
+        time_fig,
         ip_options[:20]
     )
 
