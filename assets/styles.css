@@ -93,3 +93,58 @@ html {
   flex-grow: 1;
   text-align: center;
 }
+
+.filters {
+  width: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.filters > div {
+  margin: 5px;
+}
+
+/* Add these styles for the DatePickerRange component */
+#date-picker {
+  width: calc(100% - 10px); /* Full width minus the 5px margin on each side */
+}
+
+#date-picker *:not(td) {
+  color: white;
+  background-color: rgb(121, 125, 179);
+}
+
+#date-picker svg {
+  background-color: transparent;
+}
+
+#date-picker .DayPickerNavigation_button {
+  background: white;
+}
+
+/* Style the DatePickerRange input to fill the available width */
+#date-picker .DateInput {
+  width: 45%; /* Each date input takes up half the available space */
+}
+
+#date-picker .DateRangePickerInput_arrow {
+  width: 10%;
+}
+
+#date-picker .DateInput_input {
+  width: 100%;
+  padding: 8px;
+  font-size: 14px;
+}
+
+/* Make sure the DateRangePicker container is full width */
+#date-picker .DateRangePickerInput {
+  width: 100%;
+  border: none;
+}
+
+#ip-picker * {
+  color: white;
+  background-color: rgb(121, 125, 179);
+}
