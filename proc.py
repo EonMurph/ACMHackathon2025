@@ -54,7 +54,7 @@ def process_data(logs, start_date, end_date, ip_picked='all'):
                 req_amounts[ip] = size
             
     # Group status codes into categories (200s, 300s, 400s, 500s)
-    categories = [f"{status // 100}00s" for status in status_codes]
+    categories = [status for status in status_codes]
     # get unique categories
     c = set(categories)
     # get count dictionary where the value is the status code i.e. 200's, 500's and the value is the count

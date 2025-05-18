@@ -54,6 +54,9 @@ body {
 .sidebar .nav-links li:hover {
   background-color: #b6b4e3;
 }
+td:hover {
+  background-color: #b6b4e3;
+}
 
 /* Main Content - Adjusted for Sidebar */
 .main-content {

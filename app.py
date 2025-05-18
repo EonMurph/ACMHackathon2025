@@ -1,6 +1,6 @@
 import dash
-from collections import Counter
-from dash import html, dcc, Input, Output
+from dash import html, dcc, Input, Output, dash_table
+from user_agents import parse
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -25,6 +25,23 @@ def geolocate_ip(ip):
     except:
         pass
     return None, None
+
+def build_log_table_df(request_json, ip_picked="all"):
+    log_rows = []
+    for ip, requests in request_json.items():
+        if ip_picked == "all" or ip == ip_picked:
+            for req in requests:
+                row = {
+                    'IP Address': ip,
+                    'Date': req.get('date'),
+                    'Request': req.get('request').split(" ")[0].strip("\""),
+                    'Return Code': req.get('return_code'),
+                    'Response Size': req.get('response_size'),
+                    'User Agent': parse(req.get('user_agent')).browser.family
+                }
+                log_rows.append(row)
+    return pd.DataFrame(log_rows)
+
 
 def get_request_timeseries(request_json, ip_picked="all"):
     all_requests = []
@@ -218,6 +235,22 @@ app.layout = html.Div(
                     className='allData',
                     id='geo',
                 ),
+                html.Div([
+                html.Div([
+                html.H2("Detailed Request Logs", style={'textAlign': 'center'}),
+                dash.dash_table.DataTable(
+                    id='log-table',
+                    columns=[
+                        {"name": col, "id": col} for col in
+                        ['IP Address', 'Date', 'Request', 'Return Code', 'Response Size', 'User Agent']
+                    ],
+                    style_table={'overflowX': 'auto', 'maxHeight': '500px', 'overflowY': 'scroll'},
+                    style_header={'backgroundColor': '#1a1c2c', 'color': 'white', 'fontWeight': 'bold'},
+                    style_cell={'backgroundColor': '#2c3155', 'color': 'white', 'textAlign': 'left'},
+                    page_size=20
+                )
+            ], className='data')
+            ], className='allData', id='log-view'),
             ]
         ),
     ],
@@ -234,6 +267,7 @@ app.layout = html.Div(
     Output('status-pie-chart', 'figure'),
     Output('request-time-chart', 'figure'),
     Output('ip-picker', 'options'),
+    Output('log-table', 'data'),
 
     Input('max-ips-slider', 'value'),
     Input('max-endpoints-slider', 'value'),
@@ -332,6 +366,7 @@ def update_charts(
             )
 
     df_geo = pd.DataFrame(geo_data)
+    log_df = build_log_table_df(request_json, ip_picked)
 
     if df_geo.empty:
         map_fig = go.Figure()
@@ -398,7 +433,8 @@ def update_charts(
         device_pie_fig,
         status_pie_fig,
         time_fig,
-        ip_options[:20]
+        ip_options[:20],
+        log_df.to_dict('records')
     )
 
 
